@@ -1,8 +1,4 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.EnumMap;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -48,23 +44,36 @@ class Player {
     }
 
     public void equipWeapon(String weaponName) {
-        Weapon weapon = new Weapon(weaponName);
-        Item item = new Item(weaponName, weapon, SlotType.WEAPON);
-        this.equipment.equip(item);
-        weapon.use(this);
+        Item oldWeapon = this.equipment.getEquippedItem(SlotType.WEAPON);
+        if (oldWeapon != null && oldWeapon.getItem() instanceof Weapon old) {
+            this.attributes.decreaseStrength(old.getStrengthBonus());
+            System.out.println(this.name + " has unequipped " + old.getWeaponName() + " (-STR " + old.getStrengthBonus() + ")");
+        }
+
+        Weapon newWeapon = new Weapon(weaponName);
+        Item newItem = new Item (weaponName, newWeapon, SlotType.WEAPON);
+
+        this.equipment.equip(newItem);
+        newWeapon.use(this);
     }
 
     public void equipArmor(String armorName) {
-        Armor armor = new Armor(armorName);
-        Item item = new Item(armorName, armor, SlotType.ARMOR);
-        this.equipment.equip(item);
-        armor.use(this);
+        Item oldArmor = this.equipment.getEquippedItem(SlotType.ARMOR);
+        if (oldArmor != null && oldArmor.getItem() instanceof Armor old) {
+            System.out.println(this.name + " has unequipped " + old.getArmorName() + " (-DEF " + old.getDefenseBonus() + ")");
+        }
+
+        Armor newArmor = new Armor(armorName);
+        Item newItem = new Item (armorName, newArmor, SlotType.ARMOR);
+
+        this.equipment.equip(newItem);
+        newArmor.use(this);
     }
 
     public void unequip(SlotType type) {
         Item removed = this.equipment.unequip(type);
         if (removed != null) {
-            System.out.println(this.name + " has unequiped " + removed.getItemName());
+            System.out.println(this.name + " has unequipped " + removed.getItemName());
         } else {
             System.out.println(this.name + " has nothing equipped in " + type + " slot.");
         }
@@ -173,10 +182,32 @@ class Attributes {
             levelUp();
         }
     }
+
+    public void increaseStrength(int amount) {
+        this.strength += amount;
+    }
+
+    public void decreaseStrength(int amount) {
+        this.strength -= amount;
+    }
+
+    public void increaseDefense(int amount) {
+        this.defense += amount;
+    }
+
+    public void decreaseDefense(int amount) {
+        this.defense -= amount;
+    }
 }
 
 class PlayerStatsDisplay {
     public static void displayPlayerStats(Player player) {
+        // TODO: Add tier display to PlayerStatsDisplay
+        // - Add a `tier` field to Player or Attributes (e.g., "Novice", "Warrior", etc.)
+        // - Display the current tier in PlayerStatsDisplay alongside stats
+        // - Tier progression logic will NOT be implemented in this project
+        //   (e.g., unlocking skills, class changes, or item-based ascension will be handled in future projects)
+
         Attributes a = player.getAttributes();
 
         System.out.println(player.getName());
@@ -203,13 +234,16 @@ class PlayerStatsDisplay {
         System.out.println("Equipment:");
         Equipment eq = player.getEquipment();
 
-        Item weapon = eq.getEquippedItem(SlotType.WEAPON);
-        Item armor = eq.getEquippedItem(SlotType.ARMOR);
+        Map<SlotType, Item> equippedItems = eq.getAllEquippedItems();
 
-        // TODO: add more items to equip but keep bloating in mind, might want to use a for-each loop
+        for (Map.Entry<SlotType, Item> entry : equippedItems.entrySet()) {
+            SlotType slot = entry.getKey();
+            Item item = entry.getValue();
 
-        System.out.printf(" %-10s: %s\n", "Weapon", (weapon != null ? weapon.getItemName() : ""));
-        System.out.printf(" %-10s: %s\n", "Armor", (armor != null ? armor.getItemName() : ""));
+            String display = slot.getDisplayName();
+            String itemName = (item != null) ? item.getItemName() : "";
+            System.out.printf(" %-8s: %s\n", display, itemName);
+        }
     }
 }
 
@@ -248,38 +282,53 @@ class StatusEffect {
         return this.status.getDescription();
     }
 
+    @Override
     public String toString() {
         return getDescription() + " (" + this.turnRemaining + " turns left)";
     }
 }
 
 class Equipment {
-    private Map<SlotType, Item> equipped;
+    private Map<SlotType, Item> equippedItems;
 
     public Equipment() {
-        this.equipped = new EnumMap<>(SlotType.class);
+        this.equippedItems = new EnumMap<>(SlotType.class);
     }
 
     public Item getEquippedItem(SlotType type) {
-        return this.equipped.get(type);
+        return this.equippedItems.get(type);
+    }
+
+    public Map<SlotType, Item> getAllEquippedItems() {
+        return new HashMap<>(this.equippedItems);
     }
 
     public void equip(Item item) {
-        this.equipped.put(item.getSlotType(), item);
+        this.equippedItems.put(item.getSlotType(), item);
     }
 
     public Item unequip(SlotType type) {
-        return this.equipped.remove(type);
+        return this.equippedItems.remove(type);
     }
 }
 
 enum SlotType {
-    WEAPON,
-    ARMOR,
-    BOOTS,
-    HELM,
-    GAUNTLETS,
-    ACCESSORY;
+    WEAPON("Weapon"),
+    ARMOR("Armor"),
+    BOOTS("Boots"),
+    HELM("Helm"),
+    GAUNTLETS("Gauntlets"),
+    ACCESSORY("Accessory");
+
+    private final String displayName;
+
+    SlotType(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
 }
 
 class Item {
@@ -308,39 +357,66 @@ class Item {
 
 interface ItemType {
     void use(Player player);
+    void unuse(Player player);
 }
 
 class Weapon implements ItemType {
     private String weaponName;
+    private int strengthBonus;
 
     public Weapon(String weaponName) {
         this.weaponName = weaponName;
+        this.strengthBonus = 10;
     }
 
     public String getWeaponName() {
         return this.weaponName;
     }
 
+    public int getStrengthBonus() {
+        return this.strengthBonus;
+    }
+
     @Override
     public void use(Player player) {
+        player.getAttributes().increaseStrength(this.strengthBonus);
+        System.out.println(player.getName() + " has equipped " + this.weaponName);
+    }
+
+    @Override
+    public void unuse(Player player) {
+        player.getAttributes().decreaseStrength(this.strengthBonus);
         System.out.println(player.getName() + " has equipped " + this.weaponName);
     }
 }
 
 class Armor implements ItemType {
     private String armorName;
+    private int defenseBonus;
 
     public Armor(String armorName) {
         this.armorName = armorName;
+        this.defenseBonus = 8;
     }
 
     public String getArmorName() {
         return this.armorName;
     }
 
+    public int getDefenseBonus() {
+        return this.defenseBonus;
+    }
+
     @Override
     public void use(Player player) {
+        player.getAttributes().increaseDefense(this.defenseBonus);
         System.out.println(player.getName() + " has equipped " + this.armorName);
+    }
+
+    @Override
+    public void unuse(Player player) {
+        player.getAttributes().decreaseDefense(this.defenseBonus);
+        System.out.println(player.getName() + " has unequipped " + this.armorName);
     }
 }
 
