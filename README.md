@@ -1,27 +1,36 @@
-\# Stats UI Viewer for an RPG Game
+# \# Stats UI Viewer for an RPG Game
 
 
 
-This is a simple Stats UI that shows the stats of the player and its equipment.
-The code currently shows all stats, health, mana, strength, etc., and status such as
+This is a simple Stats UI system for a text-based RPG. It displays player stats, active status effect (like buffs or debuffs), 
 
-debuffs or buffs, and shows current equipped equipment.
-
-
-
-\## Features
-
-&nbsp;- basic Game stats and view
-
-&nbsp;- equip and unequip function
+and currently equipped gear in a structured and readable format.
 
 
 
-\## Future updates
+### \## Features
 
-&nbsp;- will add the ability to swap equipment
+&nbsp;- Displays all core player stats: health, mana, strength, defense, speed, luck, and experience.
 
-&nbsp;- add stat change and color schemas, such as
+&nbsp;- Shows current status effect with remaining duration.
 
-&nbsp;green for increase and red for decrease.
+&nbsp;- Equipment management: equip and unequip weapons and armor.
+
+&nbsp;- Visual breakdown of gear slots and what's currently equipped.
+
+
+
+### \## Future updates/TODOs
+
+&nbsp;- Add the ability to swap equipment directly.
+
+&nbsp;- Add stat change indicators:
+
+&nbsp;   - Green for stat increases
+
+&nbsp;   - Red for stats decreases
+
+&nbsp;- Possibly display tier system (e.g., "Novice", "Warrior:, "Champion", etc) in the stats panel.
+
+&nbsp;- Consider modularizing for integration into larger combat systems or character creators.
 
