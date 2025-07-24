@@ -1,100 +1,135 @@
 package game.player;
 
+import game.stats.Stat;
+import game.stats.StatType;
+
+/**
+ * Holds characters core stats, such as health, mana, strength, etc.
+ * Provides access to read, modify, and reset individual stats - often influenced by equipment or status effects.
+ */
 public class Attributes {
-    private int level;
-    private int health, mana, strength, defense, speed, luck;
-    private double experience;
-    private long expToNextLevel;
-    private double baseEXP;
+    private final Stat health;
+    private final Stat mana;
+    private final Stat strength;
+    private final Stat defense;
+    private final Stat speed;
+    private final Stat luck;
+
+    public Attributes(int health, int mana, int strength, int defense, int speed, int luck) {
+        this.health = new Stat(health);
+        this.mana = new Stat(mana);
+        this.strength = new Stat(strength);
+        this.defense = new Stat(defense);
+        this.speed = new Stat(speed);
+        this.luck = new Stat(luck);
+    }
 
     public Attributes() {
-        this.level = 1;
-        this.health = 100;
-        this.mana = 50;
-        this.strength = 10;
-        this.defense = 10;
-        this.speed = 5;
-        this.luck = 2;
-
-        this.experience = 0;
-        this.baseEXP = 500;
-        this.expToNextLevel = (long) this.baseEXP;
+        this(100, 50, 10, 10, 5, 2);
     }
 
-    public int getLevel() {
-        return this.level;
-    }
-
-    public int getHealth() {
+    public Stat getHealth() {
         return this.health;
     }
 
-    public int getMana() {
+    public Stat getMana() {
         return this.mana;
     }
 
-    public int getStrength() {
+    public Stat getStrength() {
         return this.strength;
     }
 
-    public int getDefense() {
+    public Stat getDefense() {
         return this.defense;
     }
 
-    public int getSpeed() {
+    public Stat getSpeed() {
         return this.speed;
     }
 
-    public int getLuck() {
+    public Stat getLuck() {
         return this.luck;
     }
 
-    public double getExperience() {
-        return this.experience;
+    public int getCurrentHealth() {
+        return this.health.getModifiedValue();
     }
 
-    public double getExpToNextLevel() {
-        return this.expToNextLevel;
+    public int getMaxedHealth() {
+        return this.health.getBaseValue();
     }
 
-    public double getBaseEXP() {
-        return this.baseEXP;
+    public int getCurrentMana() {
+        return this.mana.getModifiedValue();
     }
 
-    public double expNeededToLevelUp() {
-        return Math.abs(this.experience - this.expToNextLevel);
+    public int getMaxMana() {
+        return this.mana.getBaseValue();
     }
 
-    public void nextLevelExpAmount() {
-        this.expToNextLevel = (long) this.baseEXP * (long) (Math.ceil(Math.pow(this.level, 1.75)));
+    public void setCurrentHealth(int value) {
+        this.health.setModifiedValue(Math.min(value, getMaxedHealth()));
     }
 
-    public void levelUp() {
-        this.level++;
-        nextLevelExpAmount();
+    public void setCurrentMana(int value) {
+        this.mana.setModifiedValue(Math.min(value, getMaxMana()));
     }
 
-    public void gainExperience(double amount) {
-        this.experience += amount;
-        while (this.experience >= this.expToNextLevel) {
-            this.experience -= this.expToNextLevel;
-            levelUp();
+    /**
+     * Resets modified stats to its base value.
+     * Typically used when temporary bonuses from effects or equipment wear off.
+     *
+     * @param type the stat to be reset.
+     */
+    public void resetStats(StatType type) {
+        switch (type) {
+            case HEALTH -> this.health.reset();
+            case MANA -> this.mana.reset();
+            case STRENGTH -> this.strength.reset();
+            case DEFENSE -> this.defense.reset();
+            case SPEED -> this.speed.reset();
+            case LUCK -> this.luck.reset();
         }
     }
 
-    public void increaseStrength(int amount) {
-        this.strength += amount;
+    /**
+     * Returns the Stat object based on the given StatType.
+     * Useful for generic access/modification in systems like effects or gear bonuses.
+     *
+     * @param type the stat to retrieve.
+     */
+    public Stat getStat(StatType type) {
+        return switch (type) {
+            case HEALTH -> this.health;
+            case MANA -> this.mana;
+            case STRENGTH -> this.strength;
+            case DEFENSE -> this.defense;
+            case SPEED -> this.speed;
+            case LUCK -> this.luck;
+        };
     }
 
+    /// Temporarily boosts strength (commonly used by effects or skills).
+    public void increaseStrength(int amount) {
+        this.strength.increaseFlat(amount);
+    }
+
+    /// Removes temporary strength bonuses.
     public void decreaseStrength(int amount) {
-        this.strength -= amount;
+        this.strength.decreaseFlat(amount);
     }
 
     public void increaseDefense(int amount) {
-        this.defense += amount;
+        this.defense.increaseFlat(amount);
     }
 
     public void decreaseDefense(int amount) {
-        this.defense -= amount;
+        this.defense.decreaseFlat(amount);
+    }
+
+    public String toString() {
+        return "Health: " + this.health + ", Mana: " + this.mana + ", Strength: " + this.strength +
+                ", Defense: " + this.defense + ", Speed: " + this.speed + ", Luck: " + this.luck;
     }
 }

@@ -1,25 +1,52 @@
 package game.status;
 
-public class StatusEffect {
-    private Status status;
-    private int turnRemaining;
+import game.player.Character;
+import game.stats.StatType;
 
-    public StatusEffect(Status status, int turns) {
-        this.status = status;
-        this.turnRemaining = turns;
+/**
+ * Takes a status effect (buffs/debuffs) applied to a character.
+ * Handles duration tracking and effect application logic.
+ */
+public class StatusEffect {
+    private final StatModifierEffect effect;
+    private int turnRemaining;
+    private boolean applied = false;
+
+    public StatusEffect(StatModifierEffect effect, int turnRemaining) {
+        this.effect = effect;
+        this.turnRemaining = turnRemaining;
     }
 
-    public Status getStatus() {
-        return this.status;
+    public static StatusEffect fromData(String name, String stat, int amount, int duration,
+                                        String polarity, String effectType, boolean reset) {
+
+        EffectPolarity effectPolarity = EffectPolarity.valueOf(polarity.toUpperCase());
+        EffectType timing = EffectType.valueOf(effectType.toUpperCase());
+        StatType statType = StatType.valueOf(stat.toUpperCase());
+
+        StatModifierEffect effect = (effectPolarity == EffectPolarity.BUFF)
+                ? new BuffEffect(name, statType, amount, timing, reset)
+                : new DebuffEffect(name, statType, amount, timing, reset);
+
+        return new StatusEffect(effect, duration);
+    }
+
+    public StatModifierEffect getEffect() {
+        return this.effect;
     }
 
     public int getTurnRemaining() {
         return this.turnRemaining;
     }
 
-    public void decrementingTurns() {
-        if (turnRemaining > 0) {
-            this.turnRemaining--;
+    public void decreaseDuration() {
+        if (this.turnRemaining > 0) this.turnRemaining--;
+    }
+
+    public void apply(Character target) {
+        if (!this.applied) {
+            this.effect.apply(target);
+            applied = true;
         }
     }
 
@@ -27,16 +54,7 @@ public class StatusEffect {
         return this.turnRemaining <= 0;
     }
 
-    public void cast() {
-        this.status.cast();
-    }
-
     public String getDescription() {
-        return this.status.getDescription();
-    }
-
-    @Override
-    public String toString() {
-        return getDescription() + " (" + this.turnRemaining + " turns left)";
+        return this.effect.getName();
     }
 }
